@@ -4,6 +4,10 @@ library(lubridate)
 library(readxl)
 library(bizdays)
 
+#####################################################################################################################################
+#####################################################################################################################################
+#####################################################################################################################################
+# Function Creation 
 
 create.calendar(name='NoWeekends', weekdays=c('saturday', 'sunday'))
 current_date <- Sys.Date()
@@ -11,20 +15,75 @@ previous_month <- current_date %m-% months(1)
 start_date <- floor_date(previous_month, "month")
 end_date <- ceiling_date(previous_month, "month") - days(1)
 
-# master_data <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/master file.xlsx",
+
+lookup_table <- data.frame(
+    request_type = c("Distribution: Product Availability - Backorders", 
+                         "Distribution: Within-campus transfer requests to fulfill future orders", 
+                         "Other Issues", 
+                         "Planning: BT Not Sche- Late", 
+                         "Planning: Move Up Production Date Within Leadtime", 
+                         "Planning: Request Production Dates", 
+                         "QA: COA Not Provided to Customer", 
+                         "QA: Missing COA", 
+                         "Transportation: Changing from LTL to full truckload", 
+                         "Transportation: Scheduling backorders once appointment time confirmed"),
+    department = c("Distribution", 
+                             "Distribution", 
+                             "Other", 
+                             "Planning", 
+                             "Planning", 
+                             "Planning", 
+                             "QA", 
+                             "QA", 
+                             "Transportation", 
+                             "Transportation")
+)
+
+
+#####################################################################################################################################
+#####################################################################################################################################
+#####################################################################################################################################
+# Work with master files (original)
+
+
+# master_data_closed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/master file_closed.xlsx",
 #                           sheet = "Raw Data")
 # 
-# master_data %>%
+# master_data_closed %>%
 #   janitor::clean_names() %>%
 #   data.frame() %>%
 #   dplyr::mutate(created = format(created, "%m/%d/%Y"),
 #                   due_by = format(due_by, "%m/%d/%Y"),
-#                   closed = format(closed, "%m/%d/%Y")) -> master_data_rds
+#                   closed = format(closed, "%m/%d/%Y")) -> master_data_closed_rds
 # 
-# saveRDS(master_data_rds, "master_data.rds")
+# saveRDS(master_data_closed_rds, "master_data_closed.rds")
+
+readRDS("master_data_closed.rds") -> master_data_closed_rds
 
 
-readRDS("master_data.rds") -> master_data_rds
+
+
+# master_data_completed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/master file_completed.xlsx",
+#                           sheet = "data")
+# 
+# master_data_completed %>%
+#     janitor::clean_names() %>%
+#     mutate(across(c(created, task_response_entered, closed), as.Date)) %>%
+#     data.frame() -> master_data_completed_rds
+
+# saveRDS(master_data_completed_rds, "master_data_completed.rds")
+
+readRDS("master_data_completed.rds") -> master_data_completed_rds
+
+
+
+
+
+
+#####################################################################################################################################
+#####################################################################################################################################
+#####################################################################################################################################
+# Original File Read
 
 
 # Closed 
@@ -42,7 +101,17 @@ closed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Pr
 completed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/12.21.2023_for_Nov/completed.xlsx")
 otif <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/12.21.2023_for_Nov/otif.xlsx")
 
-# clean up closed & completed
+
+
+
+
+#####################################################################################################################################
+#####################################################################################################################################
+#####################################################################################################################################
+# ETL: closed file
+
+
+# clean up closed
 closed %>% 
     janitor::clean_names() %>% 
     dplyr::mutate(days_to_close = round(days_to_close, 0)) %>% 
@@ -76,7 +145,7 @@ closed_cleaned %>%
   dplyr::mutate(column2 = ifelse(close_time_period > 2, ">2", "<= 2"),
                 column1 = ifelse(close_time_period < 2, "<=1", 
                                  ifelse(close_time_period < 3, "<=2",
-                                        ifelse(close_time_period < 4, "<3", ">=4")))) %>% 
+                                        ifelse(close_time_period < 4, "<=3", ">4")))) %>% 
   dplyr::relocate(month, .after = created) %>%
   dplyr::relocate(customer_number, .after = closed) %>% 
   dplyr::relocate(customer_ship_to_name, .after = customer_number) %>% 
@@ -87,4 +156,77 @@ closed_cleaned %>%
   dplyr::relocate(column1, .after = column2) -> closed_cleaned
 
 
-rbind(master_data_rds, closed_cleaned)
+rbind(master_data_closed_rds, closed_cleaned) -> master_data_closed_rds
+
+master_data_closed_rds %>%
+  mutate(row_id = apply(., 1, paste, collapse = "")) %>%
+  distinct(row_id, .keep_all = TRUE) %>%
+  select(-row_id) -> master_data_closed_rds
+  
+saveRDS(master_data_closed_rds, "master_data_closed.rds")
+
+
+
+
+
+#####################################################################################################################################
+#####################################################################################################################################
+#####################################################################################################################################
+# ETL: completed file
+
+
+
+
+completed_cleaned %>%
+  dplyr::filter(closed >= start_date & closed <= end_date) %>% 
+  dplyr::select(-task_status, -request_status, -created_by, -created_month, -item_type, -path, -close_day, -created_day) %>% 
+  dplyr::left_join(lookup_table) %>% 
+  dplyr::mutate(month = lubridate::month(closed, label = TRUE)) %>% 
+  dplyr::mutate(task_response_time_days = ifelse(is.na(created) | is.na(task_response_entered), 
+                                           0, 
+                                           bizdays::bizdays(created, task_response_entered, 'NoWeekends') - 1)) %>% 
+  dplyr::mutate(bracket = ifelse(task_response_time_days < 2, "<=1", 
+                                 ifelse(task_response_time_days < 3, "<=2",
+                                        ifelse(task_response_time_days < 4, "<=3", ">4")))) %>% 
+                                   
+  dplyr::relocate(number_days_to_close, task_id, task_owner, created, task_response_entered, month, closed,
+                  escalation_number, request_type, department, task_response_time_days, bracket) -> completed_cleaned
+
+rbind(master_data_completed_rds, completed_cleaned) -> master_data_completed_rds
+
+
+
+master_data_completed_rds %>%
+  mutate(row_id = apply(., 1, paste, collapse = "")) %>%
+  distinct(row_id, .keep_all = TRUE) %>%
+  select(-row_id) -> master_data_completed_rds
+
+saveRDS(master_data_completed_rds, "master_data_completed.rds")
+
+
+
+
+#####################################################################################################################################
+#####################################################################################################################################
+#####################################################################################################################################
+# KPI: Closed
+
+
+
+
+
+
+
+
+
+
+
+
+#####################################################################################################################################
+#####################################################################################################################################
+#####################################################################################################################################
+# KPI: Completed
+
+
+
+
