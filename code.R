@@ -3,6 +3,7 @@ library(readr)
 library(lubridate)
 library(readxl)
 library(bizdays)
+library(RColorBrewer)
 
 #####################################################################################################################################
 #####################################################################################################################################
@@ -139,6 +140,7 @@ closed_cleaned %>%
                                    customer_ship_to_name,
                                    customer_sold_to_name,
                                    selling_region)) %>% 
+  dplyr::mutate(selling_region = ifelse(is.na(selling_region), "Multiple", selling_region)) %>%
   dplyr::mutate(close_time_period = ifelse(is.na(created) | is.na(closed), 
                                             0, 
                                             bizdays::bizdays(created, closed, 'NoWeekends') - 1)) %>% 
@@ -210,23 +212,87 @@ saveRDS(master_data_completed_rds, "master_data_completed.rds")
 #####################################################################################################################################
 #####################################################################################################################################
 # KPI: Closed
+master_data_closed_rds %>%
+    dplyr::mutate(year_month = paste(year(closed), month(closed, label = TRUE), sep = "/")) %>%
+    dplyr::mutate(year_month = as.Date(paste(year_month, "01", sep = "-"), format = "%Y/%b-%d")) %>%
+    dplyr::group_by(year_month) %>%
+    dplyr::summarise(count = n()) %>% 
+    ggplot2::ggplot(aes(x = year_month, y = count)) +
+    ggplot2::geom_bar(stat = "identity", fill = "#4B8BBE") +
+    ggplot2::geom_text(aes(label = count), vjust = -0.3) +
+    ggplot2::scale_x_date(date_labels = "%Y/%b", date_breaks = "1 month") +
+    ggplot2::labs(title = "# of Tickets Closed", x = NULL, y = NULL) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(plot.title = element_text(hjust = 0.5, size = 20)) -> closed_kpi_1
+
+master_data_closed_rds %>%
+    dplyr::mutate(created_month = format(created, "%Y-%m")) %>%
+    dplyr::filter(selling_region != "Canada Co Pack") %>%
+    dplyr::group_by(created_month, selling_region) %>%
+    dplyr::summarise(count = n()) %>%
+    dplyr::mutate(percentage = count / sum(count)) %>%
+    ggplot2::ggplot(aes(x = created_month, y = percentage, fill = selling_region)) +
+    ggplot2::geom_bar(stat = "identity", position = "stack") +
+    ggplot2::geom_text(aes(label = scales::percent(percentage, accuracy = 1)), position = position_stack(vjust = 0.5), color = "black") +
+    ggplot2::scale_fill_brewer(palette = "Set3") +
+    ggplot2::scale_y_continuous(labels = scales::percent) +
+    ggplot2::labs(title = NULL, x = NULL, y = NULL) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(plot.title = element_text(hjust = 0.5)) -> closed_kpi_2
 
 
-
-
-
-
-
-
-
-
-
+# Create a new variable for the created month
+master_data_closed_rds %>%
+    dplyr::mutate(created_month = format(created, "%Y-%m")) %>%
+    dplyr::filter(selling_region != "Canada Co Pack") %>%
+    dplyr::group_by(created_month, selling_region) %>%
+    dplyr::summarise(count = n()) %>%
+    ggplot2::ggplot(aes(x = created_month, y = count, fill = selling_region)) +
+    ggplot2::geom_bar(stat = "identity", position = "stack") +
+    ggplot2::geom_text(aes(label = count), position = position_stack(vjust = 0.5), color = "black") +
+    ggplot2::scale_fill_brewer(palette = "Set3") +
+    ggplot2::labs(title = NULL, x = NULL, y = NULL) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(plot.title = element_text(hjust = 0.5)) -> closed_kpi_3
 
 #####################################################################################################################################
 #####################################################################################################################################
 #####################################################################################################################################
 # KPI: Completed
 
+### Bracket column needs to be re-examined
+master_data_completed_rds %>%
+    dplyr::filter(month(closed) == month(Sys.Date()) - 1, year(closed) == year(Sys.Date())) %>% 
+    dplyr::group_by(department, bracket) %>%
+    dplyr::summarise(count = n()) %>% 
+    ggplot2::ggplot(aes(x = department, y = count, fill = bracket)) +
+    ggplot2::geom_bar(stat = "identity", position = "fill") +
+    ggplot2::scale_fill_brewer(palette = "Set3") +
+    ggplot2::labs(title = "Response compliance % by Department", x = NULL, y = NULL) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(plot.title = element_text(hjust = 0.5, size = 20)) -> completed_kpi_1
 
 
 
+ master_data_completed_rds %>%
+    dplyr::filter(month(closed) == month(Sys.Date()) - 1, year(closed) == year(Sys.Date())) %>% 
+    dplyr::group_by(request_type) %>%
+    dplyr::summarise(count = n()) %>%
+    dplyr::arrange(desc(count)) %>% 
+    ggplot2::ggplot(aes(x = reorder(request_type, -count), y = count)) +
+    ggplot2::geom_bar(stat = "identity", fill = "lightblue4") +
+    ggplot2::geom_text(aes(label = count), vjust = -0.3, color = "white") +
+    ggplot2::theme_classic() +
+    ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    ggplot2::labs(title = NULL, x = NULL, y = NULL) +
+    ggplot2::geom_text(aes(label = count), vjust = -0.3, color = "black") -> completed_kpi_2
+
+
+############################################################################################################
+closed_kpi_1
+closed_kpi_2
+closed_kpi_3 
+completed_kpi_1
+completed_kpi_2
+
+ 
