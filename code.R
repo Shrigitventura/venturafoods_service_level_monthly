@@ -4,40 +4,47 @@ library(lubridate)
 library(readxl)
 library(bizdays)
 library(RColorBrewer)
+library(scales)
 
 #####################################################################################################################################
 #####################################################################################################################################
 #####################################################################################################################################
 # Function Creation 
 
-create.calendar(name='NoWeekends', weekdays=c('saturday', 'sunday'))
+create.calendar(name='CustomWeekends', weekdays=c('saturday', 'sunday'), holidays=character(0))
+
+
 current_date <- Sys.Date()
 previous_month <- current_date %m-% months(1)
 start_date <- floor_date(previous_month, "month")
 end_date <- ceiling_date(previous_month, "month") - days(1)
 
+target_date <- current_date %m-% months(1)
+target_month <- lubridate::month(target_date)
+target_year <- lubridate::year(target_date)
+
 
 lookup_table <- data.frame(
-    request_type = c("Distribution: Product Availability - Backorders", 
-                         "Distribution: Within-campus transfer requests to fulfill future orders", 
-                         "Other Issues", 
-                         "Planning: BT Not Sche- Late", 
-                         "Planning: Move Up Production Date Within Leadtime", 
-                         "Planning: Request Production Dates", 
-                         "QA: COA Not Provided to Customer", 
-                         "QA: Missing COA", 
-                         "Transportation: Changing from LTL to full truckload", 
-                         "Transportation: Scheduling backorders once appointment time confirmed"),
-    department = c("Distribution", 
-                             "Distribution", 
-                             "Other", 
-                             "Planning", 
-                             "Planning", 
-                             "Planning", 
-                             "QA", 
-                             "QA", 
-                             "Transportation", 
-                             "Transportation")
+  request_type = c("Distribution: Product Availability - Backorders", 
+                   "Distribution: Within-campus transfer requests to fulfill future orders", 
+                   "Other Issues", 
+                   "Planning: BT Not Sche- Late", 
+                   "Planning: Move Up Production Date Within Leadtime", 
+                   "Planning: Request Production Dates", 
+                   "QA: COA Not Provided to Customer", 
+                   "QA: Missing COA", 
+                   "Transportation: Changing from LTL to full truckload", 
+                   "Transportation: Scheduling backorders once appointment time confirmed"),
+  department = c("Distribution", 
+                 "Distribution", 
+                 "Other", 
+                 "Planning", 
+                 "Planning", 
+                 "Planning", 
+                 "QA", 
+                 "QA", 
+                 "Transportation", 
+                 "Transportation")
 )
 
 
@@ -63,7 +70,6 @@ readRDS("master_data_closed.rds") -> master_data_closed_rds
 
 
 
-
 # master_data_completed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/master file_completed.xlsx",
 #                           sheet = "data")
 # 
@@ -77,6 +83,7 @@ readRDS("master_data_closed.rds") -> master_data_closed_rds
 readRDS("master_data_completed.rds") -> master_data_completed_rds
 
 
+  
 
 
 
@@ -98,9 +105,9 @@ readRDS("master_data_completed.rds") -> master_data_completed_rds
 
 
 
-closed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/12.21.2023_for_Nov/closed.xlsx")
-completed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/12.21.2023_for_Nov/completed.xlsx")
-otif <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/12.21.2023_for_Nov/otif.xlsx")
+closed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2023.12/closed.xlsx")
+completed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2023.12/completed.xlsx")
+otif <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2023.12/otif.xlsx")
 
 
 
@@ -114,23 +121,23 @@ otif <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Proj
 
 # clean up closed
 closed %>% 
-    janitor::clean_names() %>% 
-    dplyr::mutate(days_to_close = round(days_to_close, 0)) %>% 
-    dplyr::mutate(created = as.Date(format(created, "%m/%d/%Y"), "%m/%d/%Y"),
-                                due_by = as.Date(format(due_by, "%m/%d/%Y"), "%m/%d/%Y"),
-                                closed = as.Date(format(closed, "%m/%d/%Y"), "%m/%d/%Y")) -> closed_cleaned
+  janitor::clean_names() %>% 
+  dplyr::mutate(days_to_close = round(days_to_close, 0)) %>% 
+  dplyr::mutate(created = as.Date(format(created, "%m/%d/%Y"), "%m/%d/%Y"),
+                due_by = as.Date(format(due_by, "%m/%d/%Y"), "%m/%d/%Y"),
+                closed = as.Date(format(closed, "%m/%d/%Y"), "%m/%d/%Y")) -> closed_cleaned
 
 completed %>% 
-    janitor::clean_names() %>% 
-    dplyr::mutate(created = as.Date(format(created, "%m/%d/%Y"), "%m/%d/%Y"),
-                                closed = as.Date(format(closed, "%m/%d/%Y"), "%m/%d/%Y")) -> completed_cleaned
+  janitor::clean_names() %>% 
+  dplyr::mutate(created = as.Date(format(created, "%m/%d/%Y"), "%m/%d/%Y"),
+                closed = as.Date(format(closed, "%m/%d/%Y"), "%m/%d/%Y")) -> completed_cleaned
 
 otif %>% 
   janitor::clean_names() %>% 
   dplyr::rename(customer_number = customer_ship_to_ship_to,
                 customer_ship_to_name = customer_ship_to_name_1,
                 selling_region = selling_region_name) -> otif
-  
+
 # Crete columns to match 
 closed_cleaned %>% 
   dplyr::filter(closed >= start_date & closed <= end_date) %>% 
@@ -141,9 +148,7 @@ closed_cleaned %>%
                                    customer_sold_to_name,
                                    selling_region)) %>% 
   dplyr::mutate(selling_region = ifelse(is.na(selling_region), "Multiple", selling_region)) %>%
-  dplyr::mutate(close_time_period = ifelse(is.na(created) | is.na(closed), 
-                                            0, 
-                                            bizdays::bizdays(created, closed, 'NoWeekends') - 1)) %>% 
+  dplyr::mutate(close_time_period = bizdays(created, closed, 'CustomWeekends')) %>% 
   dplyr::mutate(column2 = ifelse(close_time_period > 2, ">2", "<= 2"),
                 column1 = ifelse(close_time_period < 2, "<=1", 
                                  ifelse(close_time_period < 3, "<=2",
@@ -155,7 +160,8 @@ closed_cleaned %>%
   dplyr::relocate(selling_region, .after = customer_sold_to_name) %>% 
   dplyr::relocate(close_time_period, .after = created_month) %>% 
   dplyr::relocate(column2, .after = close_time_period) %>%
-  dplyr::relocate(column1, .after = column2) -> closed_cleaned
+  dplyr::relocate(column1, .after = column2) %>% 
+  dplyr::mutate(closure_in_2_days = ifelse(close_time_period <= 2, "met", "notmet")) -> closed_cleaned
 
 
 rbind(master_data_closed_rds, closed_cleaned) -> master_data_closed_rds
@@ -164,7 +170,7 @@ master_data_closed_rds %>%
   mutate(row_id = apply(., 1, paste, collapse = "")) %>%
   distinct(row_id, .keep_all = TRUE) %>%
   select(-row_id) -> master_data_closed_rds
-  
+
 saveRDS(master_data_closed_rds, "master_data_closed.rds")
 
 
@@ -184,15 +190,14 @@ completed_cleaned %>%
   dplyr::select(-task_status, -request_status, -created_by, -created_month, -item_type, -path, -close_day, -created_day) %>% 
   dplyr::left_join(lookup_table) %>% 
   dplyr::mutate(month = lubridate::month(closed, label = TRUE)) %>% 
-  dplyr::mutate(task_response_time_days = ifelse(is.na(created) | is.na(task_response_entered), 
-                                           0, 
-                                           bizdays::bizdays(created, task_response_entered, 'NoWeekends') - 1)) %>% 
+  mutate(task_response_time_days = bizdays(created, task_response_entered, 'CustomWeekends')) %>% 
   dplyr::mutate(bracket = ifelse(task_response_time_days < 2, "<=1", 
-                                 ifelse(task_response_time_days < 3, "<=2",
-                                        ifelse(task_response_time_days < 4, "<=3", ">4")))) %>% 
-                                   
+                                 ifelse(task_response_time_days < 3, "<=2", 
+                                        ifelse(task_response_time_days < 4, "<=3",
+                                               ifelse(task_response_time_days < 5,  "<=4", ">=5"))))) %>% 
   dplyr::relocate(number_days_to_close, task_id, task_owner, created, task_response_entered, month, closed,
-                  escalation_number, request_type, department, task_response_time_days, bracket) -> completed_cleaned
+                  escalation_number, request_type, department, task_response_time_days, bracket) %>% 
+  mutate(closure_in_2_days = ifelse(task_response_time_days <= 2, "met", "notmet")) -> completed_cleaned
 
 rbind(master_data_completed_rds, completed_cleaned) -> master_data_completed_rds
 
@@ -213,47 +218,72 @@ saveRDS(master_data_completed_rds, "master_data_completed.rds")
 #####################################################################################################################################
 # KPI: Closed
 master_data_closed_rds %>%
-    dplyr::mutate(year_month = paste(year(closed), month(closed, label = TRUE), sep = "/")) %>%
-    dplyr::mutate(year_month = as.Date(paste(year_month, "01", sep = "-"), format = "%Y/%b-%d")) %>%
-    dplyr::group_by(year_month) %>%
-    dplyr::summarise(count = n()) %>% 
-    ggplot2::ggplot(aes(x = year_month, y = count)) +
-    ggplot2::geom_bar(stat = "identity", fill = "#4B8BBE") +
-    ggplot2::geom_text(aes(label = count), vjust = -0.3) +
-    ggplot2::scale_x_date(date_labels = "%Y/%b", date_breaks = "1 month") +
-    ggplot2::labs(title = "# of Tickets Closed", x = NULL, y = NULL) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(plot.title = element_text(hjust = 0.5, size = 20)) -> closed_kpi_1
+  dplyr::mutate(year_month = paste(year(closed), month(closed, label = TRUE), sep = "/")) %>%
+  dplyr::mutate(year_month = as.Date(paste(year_month, "01", sep = "-"), format = "%Y/%b-%d")) %>%
+  dplyr::group_by(year_month) %>%
+  dplyr::summarise(count = n()) %>% 
+  ggplot2::ggplot(aes(x = year_month, y = count)) +
+  ggplot2::geom_bar(stat = "identity", fill = "#4B8BBE") +
+  ggplot2::geom_text(aes(label = count), vjust = -0.3) +
+  ggplot2::scale_x_date(date_labels = "%Y/%b", date_breaks = "1 month") +
+  ggplot2::labs(title = "# of Tickets Closed", x = NULL, y = NULL) +
+  ggplot2::theme_classic() +
+  ggplot2::theme(plot.title = element_text(hjust = 0.5, size = 20)) -> closed_kpi_1
 
-master_data_closed_rds %>%
-    dplyr::mutate(created_month = format(created, "%Y-%m")) %>%
-    dplyr::filter(selling_region != "Canada Co Pack") %>%
-    dplyr::group_by(created_month, selling_region) %>%
-    dplyr::summarise(count = n()) %>%
-    dplyr::mutate(percentage = count / sum(count)) %>%
-    ggplot2::ggplot(aes(x = created_month, y = percentage, fill = selling_region)) +
-    ggplot2::geom_bar(stat = "identity", position = "stack") +
-    ggplot2::geom_text(aes(label = scales::percent(percentage, accuracy = 1)), position = position_stack(vjust = 0.5), color = "black") +
-    ggplot2::scale_fill_brewer(palette = "Set3") +
-    ggplot2::scale_y_continuous(labels = scales::percent) +
-    ggplot2::labs(title = NULL, x = NULL, y = NULL) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(plot.title = element_text(hjust = 0.5)) -> closed_kpi_2
+# master_data_closed_rds %>%
+#   dplyr::filter(selling_region != "Canada Co Pack") %>%
+#   dplyr::group_by(selling_region, column1) %>%
+#   dplyr::summarise(count = n(), .groups = "drop") %>%
+#   dplyr::group_by(selling_region) %>%
+#   dplyr::mutate(percentage = count / sum(count)) %>%
+#   tidyr::pivot_wider(names_from = column1, values_from = percentage)
+#   
+#   
+#   dplyr::mutate(percentage = count / sum(count)) %>%
+#   ggplot2::ggplot(aes(x = selling_region, y = percentage, fill = selling_region)) +
+#   ggplot2::geom_bar(stat = "identity", position = "stack") +
+#   ggplot2::geom_text(aes(label = scales::percent(percentage, accuracy = 1)), position = position_stack(vjust = 0.5), color = "black") +
+#   ggplot2::scale_fill_brewer(palette = "Set3") +
+#   ggplot2::scale_y_continuous(labels = scales::percent) +
+#   ggplot2::labs(title = NULL, x = NULL, y = NULL) +
+#   ggplot2::theme_classic() +
+#   ggplot2::theme(plot.title = element_text(hjust = 0.5)) -> closed_kpi_2
 
 
 # Create a new variable for the created month
 master_data_closed_rds %>%
-    dplyr::mutate(created_month = format(created, "%Y-%m")) %>%
-    dplyr::filter(selling_region != "Canada Co Pack") %>%
-    dplyr::group_by(created_month, selling_region) %>%
-    dplyr::summarise(count = n()) %>%
-    ggplot2::ggplot(aes(x = created_month, y = count, fill = selling_region)) +
-    ggplot2::geom_bar(stat = "identity", position = "stack") +
-    ggplot2::geom_text(aes(label = count), position = position_stack(vjust = 0.5), color = "black") +
-    ggplot2::scale_fill_brewer(palette = "Set3") +
-    ggplot2::labs(title = NULL, x = NULL, y = NULL) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(plot.title = element_text(hjust = 0.5)) -> closed_kpi_3
+  dplyr::mutate(created_month = format(created, "%Y-%m")) %>%
+  dplyr::filter(selling_region != "Canada Co Pack") %>%
+  dplyr::group_by(created_month, selling_region) %>%
+  dplyr::summarise(count = n()) %>%
+  ggplot2::ggplot(aes(x = created_month, y = count, fill = selling_region)) +
+  ggplot2::geom_bar(stat = "identity", position = "stack") +
+  ggplot2::geom_text(aes(label = count), position = position_stack(vjust = 0.5), color = "black") +
+  ggplot2::scale_fill_brewer(palette = "Set3") +
+  ggplot2::labs(title = NULL, x = NULL, y = NULL) +
+  ggplot2::theme_classic() +
+  ggplot2::theme(plot.title = element_text(hjust = 0.5)) -> closed_kpi_3
+
+master_data_closed_rds %>%
+  mutate(year = lubridate::year(closed)) %>%
+  mutate(month = sprintf("%02d", lubridate::month(closed, label = FALSE))) %>%
+  mutate(year_month = paste0(year, "/", month)) %>%
+  mutate(year_month = as.Date(paste0(year_month, "/01"), format = "%Y/%m/%d")) %>%
+  dplyr::group_by(year_month, closure_in_2_days) %>%
+  dplyr::summarise(count = n(), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = closure_in_2_days, values_from = count, values_fill = 0) %>%
+  dplyr::mutate(percentage_met = met / (met + notmet)) %>%
+  dplyr::select(year_month, percentage_met) %>%
+  mutate(year_month = format(year_month, "%Y/%m")) %>%
+  mutate(year_month = factor(year_month, levels = sort(unique(year_month)))) %>%
+  ggplot(aes(x = year_month, y = percentage_met, group = 1)) +
+  geom_line() +
+  geom_hline(yintercept = 0.9, linetype = "dashed", color = "red") +
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 1)) +
+  labs(x = "Year/Month", y = " ", title = "% of Tickets within 2 Days") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) -> closed_kpi_4
+
 
 #####################################################################################################################################
 #####################################################################################################################################
@@ -262,37 +292,73 @@ master_data_closed_rds %>%
 
 ### Bracket column needs to be re-examined
 master_data_completed_rds %>%
-    dplyr::filter(month(closed) == month(Sys.Date()) - 1, year(closed) == year(Sys.Date())) %>% 
-    dplyr::group_by(department, bracket) %>%
-    dplyr::summarise(count = n()) %>% 
-    ggplot2::ggplot(aes(x = department, y = count, fill = bracket)) +
-    ggplot2::geom_bar(stat = "identity", position = "fill") +
-    ggplot2::scale_fill_brewer(palette = "Set3") +
-    ggplot2::labs(title = "Response compliance % by Department", x = NULL, y = NULL) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(plot.title = element_text(hjust = 0.5, size = 20)) -> completed_kpi_1
+  dplyr::filter(lubridate::month(closed) == target_month, lubridate::year(closed) == target_year) %>%
+  dplyr::group_by(department, bracket) %>%
+  dplyr::summarise(count = n()) %>%
+  dplyr::mutate(percentage = count / sum(count)) %>%
+  ggplot2::ggplot(aes(x = department, y = percentage, fill = fct_rev(bracket))) +
+  ggplot2::geom_bar(stat = "identity", position = "fill") +
+  ggplot2::geom_text(aes(label = paste0(round(percentage * 100), "%")), position = position_fill(vjust = 0.5)) +
+  ggplot2::scale_y_continuous(labels = scales::percent) +
+  ggplot2::scale_fill_brewer(palette = "Set3", name = "Bracket") +
+  ggplot2::labs(title = "Response compliance % by Department", x = NULL, y = NULL) +
+  ggplot2::theme_classic() +
+  ggplot2::theme(plot.title = element_text(hjust = 0.5, size = 20),
+                 axis.text.x = element_text(size = 14, face = "bold"),
+                 axis.text.y = element_text(size = 14, face = "bold")) +
+  ggplot2::coord_cartesian(xlim = c(NA, NA), ylim = c(NA, NA), expand = TRUE) -> completed_kpi_1
 
 
 
- master_data_completed_rds %>%
-    dplyr::filter(month(closed) == month(Sys.Date()) - 1, year(closed) == year(Sys.Date())) %>% 
-    dplyr::group_by(request_type) %>%
-    dplyr::summarise(count = n()) %>%
-    dplyr::arrange(desc(count)) %>% 
-    ggplot2::ggplot(aes(x = reorder(request_type, -count), y = count)) +
-    ggplot2::geom_bar(stat = "identity", fill = "lightblue4") +
-    ggplot2::geom_text(aes(label = count), vjust = -0.3, color = "white") +
-    ggplot2::theme_classic() +
-    ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    ggplot2::labs(title = NULL, x = NULL, y = NULL) +
-    ggplot2::geom_text(aes(label = count), vjust = -0.3, color = "black") -> completed_kpi_2
 
+master_data_completed_rds %>%
+  dplyr::filter(lubridate::month(closed) == target_month, lubridate::year(closed) == target_year) %>%
+  dplyr::group_by(request_type) %>%
+  dplyr::summarise(count = n()) %>%
+  dplyr::arrange(desc(count)) %>%
+  ggplot2::ggplot(aes(x = reorder(request_type, -count), y = count)) +
+  ggplot2::geom_bar(stat = "identity", fill = "lightblue4") +
+  ggplot2::geom_text(aes(label = count), vjust = -0.3, color = "white") +
+  ggplot2::theme_classic() +
+  ggplot2::theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggplot2::labs(title = "Count of Types of Request", x = NULL, y = NULL) +
+  ggplot2::geom_text(aes(label = count), vjust = -0.3, color = "black") +
+  ggplot2::theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+  ggplot2::scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+  theme(plot.title = element_text(hjust = 0.5))-> completed_kpi_2
+
+
+
+master_data_completed_rds %>%
+  mutate(year = lubridate::year(closed)) %>%
+  mutate(month = sprintf("%02d", lubridate::month(closed, label = FALSE))) %>%
+  mutate(year_month = paste0(year, "/", month)) %>%
+  mutate(year_month = as.Date(paste0(year_month, "/01"), format = "%Y/%m/%d")) %>%
+  dplyr::group_by(year_month, closure_in_2_days) %>%
+  dplyr::summarise(count = n(), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = closure_in_2_days, values_from = count, values_fill = 0) %>%
+  dplyr::mutate(percentage_met = met / (met + notmet)) %>%
+  dplyr::select(year_month, percentage_met) %>%
+  mutate(year_month = format(year_month, "%Y/%m")) %>%
+  mutate(year_month = factor(year_month, levels = sort(unique(year_month)))) %>%
+  ggplot(aes(x = year_month, y = percentage_met, group = 1)) +
+  geom_line() +
+  geom_hline(yintercept = 0.9, linetype = "dashed", color = "red") +
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 1)) +
+  labs(x = NULL, y = NULL, title = "Response Time Performance") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face = "bold"),
+        axis.text.y = element_text(face = "bold")) -> completed_kpi_3
 
 ############################################################################################################
-closed_kpi_1
-closed_kpi_2
-closed_kpi_3 
+completed_kpi_3
 completed_kpi_1
 completed_kpi_2
 
- 
+closed_kpi_4
+closed_kpi_1
+# closed_kpi_2
+closed_kpi_3 
+
+
