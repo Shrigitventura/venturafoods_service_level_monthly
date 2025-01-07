@@ -74,7 +74,7 @@ readRDS("master_data_completed.rds") -> master_data_completed_rds
 
 
 # Closed 
-# https://venturafoods.sharepoint.com/sites/operations/SUPPLYCHAIN/SCS/Lists/Service%20Escalation%20Tracker/stan.aspx
+# https://venturafoods.sharepoint.com/sites/operations/SUPPLYCHAIN/SCS/Lists/Service%20Escalation%20Tracker/Cosed.aspx
 
 # Completed
 # https://venturafoods.sharepoint.com/sites/operations/SUPPLYCHAIN/SCS/Lists/SERVICEESCALATIONTASKS/All.aspx#InplviewHashbe3cd0d3-d91e-49b7-b0a3-5ab4f7704192=FilterField1%3DTask%255Fx0020%255FStatus-FilterValue1%3DComplete
@@ -84,9 +84,9 @@ readRDS("master_data_completed.rds") -> master_data_completed_rds
 
 
 
-closed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/closed.xlsx")
-completed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/completed.xlsx")
-otif <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/otif.xlsx")
+closed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12/closed.xlsx")
+completed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12/completed.xlsx")
+otif <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12/otif.xlsx")
 
 
 
@@ -166,7 +166,7 @@ saveRDS(master_data_closed_rds, "master_data_closed.rds")
 
 
 
-writexl::write_xlsx(master_data_closed_rds, "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/master_data_closed.xlsx")
+writexl::write_xlsx(master_data_closed_rds, "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12/master_data_closed.xlsx")
 
 #####################################################################################################################################
 #####################################################################################################################################
@@ -236,20 +236,20 @@ master_data_completed_rds %>%
 
 saveRDS(master_data_completed_rds, "master_data_completed.rds")
 
-writexl::write_xlsx(master_data_completed_rds, "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/master_data_completed.xlsx")
+writexl::write_xlsx(master_data_completed_rds, "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12/master_data_completed.xlsx")
 
 
 
 
 ## Copy the master file into the new folder
-file.copy("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.10/MASTER_CLOSED.xlsx", 
-          "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/MASTER_CLOSED.xlsx")
+file.copy("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/MASTER_CLOSED.xlsx", 
+          "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12/MASTER_CLOSED.xlsx")
 
-file.copy("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.10/MASTER_COMPLETED.xlsx", 
-          "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/MASTER_COMPLETED.xlsx")
+file.copy("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/MASTER_COMPLETED.xlsx", 
+          "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12/MASTER_COMPLETED.xlsx")
 
-file.copy("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.10/Service Escalation Performance - October.pptx", 
-          "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/Service Escalation Performance - November.pptx")
+file.copy("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.11/Service Escalation Performance - October.pptx", 
+          "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12/Service Escalation Performance - November.pptx")
 
 
 
