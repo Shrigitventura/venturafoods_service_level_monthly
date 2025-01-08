@@ -135,7 +135,7 @@ closed_cleaned %>%
   dplyr::relocate(close_time_period, .after = created_month) %>% 
   dplyr::mutate(closure_in_2_days = ifelse(close_time_period <= 2, "Met", "Not Met")) %>% 
   dplyr::relocate(closure_in_2_days, .before = issue) %>% 
-  dplyr::select(-id, -customer_name) %>% 
+  dplyr::select(-customer_name) %>% 
   dplyr::relocate(days_to_close, ticket_owner, ticket, request_status, created, year_month, due_by, closed, customer_number,
                   customer_ship_to_name, customer_sold_to_name, selling_region, location, created_month, close_time_period,
                   closure_in_2_days, issue)-> closed_cleaned
