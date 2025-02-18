@@ -84,9 +84,9 @@ readRDS("master_data_completed.rds") -> master_data_completed_rds
 
 
 
-closed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12_2/closed.xlsx")
-completed <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12_2/completed.xlsx")
-otif <- read_excel("C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12_2/otif.xlsx")
+closed <- read_excel("C:/Users/SPoudel/Ventura Foods/SC Analytics Team - General/Stan Report Files/Service Level Escalation Monthly/02.13.2025/closed.xlsx")
+completed <- read_excel("C:/Users/SPoudel/Ventura Foods/SC Analytics Team - General/Stan Report Files/Service Level Escalation Monthly/02.13.2025/completed.xlsx")
+otif <- read_excel("C:/Users/SPoudel/Ventura Foods/SC Analytics Team - General/Stan Report Files/Service Level Escalation Monthly/02.13.2025/otif.xlsx")
 
 
 
@@ -115,7 +115,8 @@ otif %>%
   janitor::clean_names() %>% 
   dplyr::rename(customer_number = customer_ship_to_ship_to,
                 customer_ship_to_name = customer_ship_to_name_1,
-                selling_region = selling_region_name) -> otif
+                customer_sold_to_name = customer_sold_to,
+                selling_region = selling_region) -> otif
 
 # Crete columns to match 
 closed_cleaned %>% 
@@ -166,7 +167,7 @@ saveRDS(master_data_closed_rds, "master_data_closed.rds")
 
 
 
-writexl::write_xlsx(master_data_closed_rds, "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12_2/master_data_closed.xlsx")
+writexl::write_xlsx(master_data_closed_rds, "C:/Users/SPoudel/Ventura Foods/SC Analytics Team - General/Stan Report Files/Service Level Escalation Monthly/02.13.2025/master_data_closed.xlsx")
 
 #####################################################################################################################################
 #####################################################################################################################################
@@ -236,7 +237,7 @@ master_data_completed_rds %>%
 
 saveRDS(master_data_completed_rds, "master_data_completed.rds")
 
-writexl::write_xlsx(master_data_completed_rds, "C:/Users/slee/OneDrive - Ventura Foods/Ventura Work/SCE/Project/FY 23/Service Level Escalation/monthly/2024.12_2/master_data_completed.xlsx")
+writexl::write_xlsx(master_data_completed_rds, "C:/Users/SPoudel/Ventura Foods/SC Analytics Team - General/Stan Report Files/Service Level Escalation Monthly/02.13.2025/master_data_completed.xlsx")
 
 
 
